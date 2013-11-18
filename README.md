@@ -1,3 +1,5 @@
+**Get it from the [Chrome Web Store](https://chrome.google.com/webstore/detail/jquery-audit/dhhnpbajdcgdmbbcoakfhmfgmemlncjg/).**
+
 jQuery Audit
 ------------
 
