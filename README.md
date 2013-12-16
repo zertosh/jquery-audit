@@ -1,7 +1,7 @@
-**Get it from the [Chrome Web Store](https://chrome.google.com/webstore/detail/jquery-audit/dhhnpbajdcgdmbbcoakfhmfgmemlncjg/).**
-
 jQuery Audit
 ------------
+
+#### **Install it from the [Chrome Web Store](https://chrome.google.com/webstore/detail/jquery-audit/dhhnpbajdcgdmbbcoakfhmfgmemlncjg/).**
 
 `jQuery Audit` is a Chrome Developer Tools extension for ~~debugging~~ auditing jQuery &mdash; it creates a sidebar in the `Elements panel` containing jQuery **delegated events**, internal data, and more, as **live `DOM nodes`, `functions`, and `objects`**.
 
@@ -62,7 +62,7 @@ Often event `handlers` are _bound_ functions. In these cases, the function under
   ![Native bind](http://static.tumblr.com/p2zjhet/okVmwfq2u/native-bind-highlight.png)
 
 ##### `$.proxy` from [jQuery](http://jquery.com/)
-* With `$.proxy` the `bindee` can't be found as a property on the `binder` but rather in a `Closure`. A sign that the `binder` is `$.proxy` is the existence of a `guid` property on the `handler`. Expand the `handler`, followed by `<function scope>` and then the inner-most `Closure`. One of the variables in this scope contains the `bindee` - the name of the variable that contains the `bindee` will likely vary because of minification.
+* With `$.proxy` the `bindee` can't be found as a property on the `binder` but rather in a `Closure`. Expand the `handler`, followed by `<function scope>` and then the inner-most `Closure`. One of the variables in this scope contains the `bindee` - the name of the variable that contains the `bindee` will likely vary because of minification.
 
   ![jQuery proxy](http://static.tumblr.com/p2zjhet/jLfmwfq44/jquery-proxy-highlight.png)
 
