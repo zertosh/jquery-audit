@@ -144,11 +144,10 @@ var backgroundPageConnection = chrome.runtime.connect({
     name: 'devtools-jqueryaudit'
 });
 
-function backgroundPostMessage(action) {
-    chrome.devtools.inspectedWindow.eval('document.location.href', function(url) {
-        backgroundPageConnection.postMessage({ action: action, url: url });
-    });
-}
+// Pass "tabId" to the background page so we can cleanup after the panel closes.
+backgroundPageConnection.postMessage({
+    tabId: chrome.devtools.inspectedWindow.tabId
+});
 
 var elements = chrome.devtools.panels.elements;
 elements.createSidebarPane('jQuery Audit', function(sidebar) {
@@ -157,10 +156,8 @@ elements.createSidebarPane('jQuery Audit', function(sidebar) {
     }
     updatePanelContents();
     elements.onSelectionChanged.addListener(function() {
-        backgroundPostMessage('ON_SELECTION_CHANGED');
         updatePanelContents();
     });
-    backgroundPostMessage('CREATE_SIDEBAR_PANE');
 
     // TODO: Only update while the panel is visible.
     // "onHidden" works in Chrome 30 and 31, but "onShown" only seems to work

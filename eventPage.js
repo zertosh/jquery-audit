@@ -1,38 +1,35 @@
 /* global chrome */
 
-var _gaq = _gaq || [];
-_gaq.push(['_setAccount', 'UA-45812610-1']);
-(function() {
-    var ga = document.createElement('script');
-    ga.src = 'https://ssl.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0];
-    s.parentNode.insertBefore(ga, s);
-})();
-
-var prevUrl;
-
 chrome.runtime.onConnect.addListener(function(port) {
     if (port.name !== 'devtools-jqueryaudit') return;
 
-    // GA tick
-    port.onMessage.addListener(function(msg) {
-        if (prevUrl === msg.url) return;
-        _gaq.push(['_trackPageview', (prevUrl= msg.url)]);
-    });
+    var tabId;
+    var tabIdListener = function(message/*, sender, sendResponse*/) {
+        if (!message.tabId) return;
+        tabId = message.tabId;
+        port.onMessage.removeListener(tabIdListener);
+    };
+    port.onMessage.addListener(tabIdListener);
 
-    // Clean up after the dev-tools closes
+    // The DevTools page is the only one that can "eval" code within
+    // the context of the inspected page. But, it has no way of knowing
+    // that the panel was closed. So, we need this trickery to clean up
+    // after the DevTools are closed.
     port.onDisconnect.addListener(function() {
-        chrome.tabs.executeScript(port.tabId, {
+        if (tabId == null) return;
+        chrome.tabs.executeScript(tabId, {
             code: '(' + function() {
-                if (typeof window.jQueryAudit === 'function') window.jQueryAudit();
-                if ('jQueryAudit' in window) delete window.jQueryAudit;
+                var script = document.createElement('script');
+                script.innerHTML = '(' + function() {
+                    if (typeof window.jQueryAudit === 'function') window.jQueryAudit();
+                    if ('jQueryAudit' in window) delete window.jQueryAudit;
+                }.toString() + ')()';
+                document.head.appendChild(script);
+                setTimeout(function() {
+                    document.head.removeChild(script);
+                });
             }.toString() + ')()'
         });
-        prevUrl = null;
     });
 
-    chrome.tabs.query({ 'active': true }, function (tabs) {
-        port.url = tabs[0].url;
-        port.tabId = tabs[0].id;
-    });
 });
