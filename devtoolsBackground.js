@@ -12,11 +12,15 @@ function getPanelContents(settings) {
 
     // We will only work if there is a "jQuery" function.
     // TODO: Alternatively check for an AMD module.
-    if ((typeof window.jQuery !== 'function') ||
-        (typeof window.jQuery._data !== 'function') )
-            return (function(msg) {
-                return (msg.Error = '@(window.jQuery is missing)'), msg;
-            })(Object.create(null));
+    if (typeof window.jQuery !== 'function')
+        return (function(msg) {
+            return (msg.Error = '@(window.jQuery is missing)'), msg;
+        })(Object.create(null));
+
+    if (typeof window.jQuery._data !== 'function')
+        return (function(msg) {
+            return (msg.Error = '@(jQuery version is too old)'), msg;
+        })(Object.create(null));
 
     return (function($, el) {
 
