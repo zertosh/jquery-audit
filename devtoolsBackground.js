@@ -1,8 +1,10 @@
 /* jslint browser: true */
 /* global chrome, $0 */
 
-var getPanelContents = function () {
+function getPanelContents(settings) {
     if (!$0) return;
+
+    settings || (settings = {});
 
     // In case we're in an <iframe>
     var document = $0.ownerDocument;
@@ -42,26 +44,37 @@ var getPanelContents = function () {
         }
 
         // Get/create the comment nodes "<!-- @(window) -->" and "<!-- @(document) -->"
-        // that go above <!DOCTYPE html>. These are used as representations for
-        // the "window" and "document" objects. Since they don't have an element
-        // representation in the "Elements" view, but can have event listeners, we
-        // add the comment nodes for convenience.
-        // If you want to remove them just call jQueryAudit() in the console.
-        var jQueryAudit = window.jQueryAudit ||
-            (window.jQueryAudit = (function(d) {
-                function cleanup() {
-                    doc.parentNode.removeChild(doc);
-                    win.parentNode.removeChild(win);
-                    cleanup.window = cleanup.document = null;
-                }
-                var win = cleanup.window = d.doctype.parentNode.insertBefore(
-                    d.createComment('@(window)'),
-                    d.doctype );
-                var doc = cleanup.document = d.doctype.parentNode.insertBefore(
-                    d.createComment('@(document)'),
-                    d.doctype );
-                return cleanup;
-            })(document));
+        // that go below "<html>". These are used as representations for
+        // the "window" and "document" objects. Since they don't have a representation
+        // in the Elements Panel, but can have event listeners, we add the comment
+        // nodes for convenience.
+        //
+        // These use to be above the "<!DOCTYPE html>". There is bug in Chrome
+        // the caused the Elements Panel to scroll to the selected element if the DOM
+        // changed when these helper elements were above "<html>". So, they got moved.
+        //
+        // To turn them off go to Extensions -> jQuery Audit -> options
+        //
+        var jQueryAudit = !settings.displayHelpers ? {} : window.jQueryAudit ||
+            (window.jQueryAudit = (function() {
+                var target = document.documentElement.firstChild;
+                var parent = target.parentNode;
+                var jQA = {};
+                try {
+                    jQA.window = parent.insertBefore(
+                        document.createComment('@(window)'),
+                        target );
+                    jQA.document = parent.insertBefore(
+                        document.createComment('@(document)'),
+                        target );
+                    jQA.cleanup = function() {
+                        parent.removeChild(jQA.window);
+                        parent.removeChild(jQA.document);
+                        jQA.cleanup = jQA.window = jQA.document = null;
+                    };
+                } catch(err) {}
+                return jQA;
+            })());
 
         // Check if we're on "<!-- @(window) -->" or "<!-- @(document) -->"
         var target = (el === jQueryAudit.window)   ? window :
@@ -138,7 +151,7 @@ var getPanelContents = function () {
         })() );
 
     })(window.jQuery, $0);
-};
+}
 
 var backgroundPageConnection = chrome.runtime.connect({
     name: 'devtools-jqueryaudit'
@@ -151,17 +164,53 @@ backgroundPageConnection.postMessage({
 
 var elements = chrome.devtools.panels.elements;
 elements.createSidebarPane('jQuery Audit', function(sidebar) {
-    function updatePanelContents() {
-        sidebar.setExpression('(' + getPanelContents.toString() + ')()');
-    }
+    // Assume we're visible from the start
+    var isVisible = true;
+
     updatePanelContents();
+
     elements.onSelectionChanged.addListener(function() {
-        updatePanelContents();
+        if (isVisible) updatePanelContents();
     });
 
-    // TODO: Only update while the panel is visible.
-    // "onHidden" works in Chrome 30 and 31, but "onShown" only seems to work
-    // properly in 32 and 33. I'll come back to this when 32 is stable.
-    // sidebar.onHidden.addListener(function() { });
-    // sidebar.onShown.addListener(function() { });
+    // "onShown" is flaky on Chrome 31
+    if (getChromeVersion() > 31) {
+        // Don't update the sidebar if it's not visible
+        sidebar.onShown.addListener(function() {
+            isVisible = true;
+            updatePanelContents();
+        });
+        sidebar.onHidden.addListener(function() {
+            isVisible = false;
+        });
+    }
+
+    function updatePanelContents() {
+        sidebar.setExpression( serializeAsIIFE(getPanelContents, getSettings()) );
+    }
 });
+
+function serializeAsIIFE(fn) {
+    var params = Array.prototype.slice
+        .call(arguments, 1)
+        .map(function(arg) {
+            return JSON.stringify(arg);
+        }).join(',');
+    return [ '(', fn.toString(), ')(', params, ')' ].join('');
+}
+
+function getChromeVersion() {
+    return parseInt(navigator.userAgent.match(/chrome\/(\d+)/i)[1]);
+}
+
+function getSettings() {
+    var store = localStorage;
+    // Default settings
+    var settings = {
+        displayHelpers: true
+    };
+    if ('displayHelpers' in store) {
+        (settings.displayHelpers = !!parseInt(store.displayHelpers));
+    }
+    return settings;
+}

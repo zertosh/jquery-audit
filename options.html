@@ -1,0 +1,33 @@
+<html>
+<head>
+  <title>jQuery Audit options</title>
+  <style>
+    body {
+      background: #efefef;
+    }
+    .center {
+      position: absolute;
+      top: 50%; left: 50%;
+      -webkit-transform: translate(-50%, -50%);
+    }
+    .webkit-html-comment {
+      color: rgb(35, 110, 37);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="center">
+    <span>Display the </span>
+    <code class="webkit-html-comment">&lt;!-- @window --&gt;</code>
+    <span> and </span>
+    <code class="webkit-html-comment">&lt;!-- @document --&gt;</code>
+    <span> helpers?</span>
+    <select id="display-helpers">
+      <option value="1">yes</option>
+      <option value="0">no</option>
+    </select>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>
